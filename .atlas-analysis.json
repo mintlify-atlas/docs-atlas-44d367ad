@@ -1,0 +1,74 @@
+{
+  "projectType": "sdk-library",
+  "projectName": "Bow",
+  "projectDescription": "A functional bow with procedural string rendering for Unity game development.",
+  "theme": "palm",
+  "primaryColor": "#8B4513",
+  "lightColor": "#D2691E",
+  "darkColor": "#654321",
+  "navigation": {
+    "groups": [
+      {
+        "group": "Get Started",
+        "pages": [
+          "introduction",
+          "installation",
+          "quickstart"
+        ]
+      },
+      {
+        "group": "Components",
+        "pages": [
+          "components/bow",
+          "components/arrow",
+          "components/line-renderer"
+        ]
+      },
+      {
+        "group": "Guides",
+        "pages": [
+          "guides/setup",
+          "guides/customization",
+          "guides/troubleshooting"
+        ]
+      },
+      {
+        "group": "API Reference",
+        "pages": [
+          "api/bow-class",
+          "api/arrow-class"
+        ]
+      },
+      {
+        "group": "Resources",
+        "pages": [
+          "examples",
+          "contributing",
+          "changelog"
+        ]
+      }
+    ]
+  },
+  "keyFeatures": [
+    "Procedural bowstring rendering using Unity LineRenderer",
+    "Dynamic projectile force based on draw time",
+    "Physics-based arrow flight with automatic rotation",
+    "Configurable strength and draw parameters",
+    "Easy Unity Editor integration"
+  ],
+  "publicApiSurface": [
+    "Bow.minStrength",
+    "Bow.maxStrength",
+    "Bow.drawTime",
+    "Bow.drawBackStrength",
+    "Bow.projectilePrefab",
+    "Bow.projectilePoint",
+    "Bow.arrowRotation",
+    "Bow.fpCam",
+    "Bow.upperLine",
+    "Bow.middleLine",
+    "Bow.lowerLine",
+    "Bow.lineRenderer",
+    "Arrow.SetDefaultRot(Vector3)"
+  ]
+}
