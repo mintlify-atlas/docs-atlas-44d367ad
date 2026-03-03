@@ -1,0 +1,290 @@
+---
+title: 'Line Renderer Setup'
+description: 'How the procedural bowstring rendering system works using a three-point LineRenderer'
+---
+
+## Overview
+
+The bow uses Unity's LineRenderer component to create a procedural bowstring that dynamically responds to the draw state. The system uses three transform points to create a realistic string that pulls back when the bow is drawn.
+
+This creates a visual feedback system where players can see the string being drawn back, indicating the power of their shot.
+
+## The Three-Point System
+
+The bowstring is rendered using three key points:
+
+<CardGroup cols={3}>
+  <Card title="Upper Line" icon="arrow-up">
+    The top attachment point of the bowstring, positioned at the upper limb of the bow
+  </Card>
+  <Card title="Middle Line" icon="circle-dot">
+    The center point of the string that moves backward when drawn, creating the pull-back effect
+  </Card>
+  <Card title="Lower Line" icon="arrow-down">
+    The bottom attachment point of the bowstring, positioned at the lower limb of the bow
+  </Card>
+</CardGroup>
+
+### Transform Setup
+
+In your bow GameObject hierarchy:
+
+```
+Bow
+├── UpperLinePoint (Transform)
+├── MiddleLinePoint (Transform)
+├── LowerLinePoint (Transform)
+└── LineRenderer (Component)
+```
+
+Position these transforms:
+- **upperLine**: At the top tip of the bow where the string attaches
+- **middleLine**: At the center of the bow, where the arrow would rest
+- **lowerLine**: At the bottom tip of the bow where the string attaches
+
+## How RenderLine Works
+
+The `RenderLine()` method is called every frame while drawing and once when releasing:
+
+```csharp
+private void RenderLine()
+{
+    lineRenderer.positionCount = 3;
+    lineRenderer.SetPosition(0, upperLine.localPosition);
+    lineRenderer.SetPosition(2, lowerLine.localPosition);
+
+    //Middle Pos
+    lineRenderer.SetPosition(1, middleLine.localPosition + Vector3.Lerp(Vector3.zero, new Vector3(-drawBackStrength, 0, 0), percentage));
+}
+```
+
+### Step-by-Step Breakdown
+
+1. **Set Position Count**
+   ```csharp
+   lineRenderer.positionCount = 3;
+   ```
+   Ensures the line has exactly three points (upper, middle, lower)
+
+2. **Static Upper Point**
+   ```csharp
+   lineRenderer.SetPosition(0, upperLine.localPosition);
+   ```
+   First point stays fixed at the upper attachment
+
+3. **Static Lower Point**
+   ```csharp
+   lineRenderer.SetPosition(2, lowerLine.localPosition);
+   ```
+   Last point stays fixed at the lower attachment
+
+4. **Dynamic Middle Point**
+   ```csharp
+   lineRenderer.SetPosition(1, middleLine.localPosition + Vector3.Lerp(Vector3.zero, new Vector3(-drawBackStrength, 0, 0), percentage));
+   ```
+   The middle point moves based on draw percentage:
+   - Starts at `middleLine.localPosition` (no offset)
+   - Interpolates to `middleLine.localPosition + new Vector3(-drawBackStrength, 0, 0)`
+   - Uses `percentage` (0 to 1) as the interpolation factor
+   - Moves in the negative X direction (backward relative to the bow)
+
+## Draw-Back Visualization
+
+Here's how the bowstring changes shape as you draw:
+
+<Steps>
+  <Step title="Rest State (percentage = 0)">
+    ```
+    Upper ●
+          |\
+          | \
+    Middle●  \ (no offset)
+          | /
+          |/
+    Lower ●
+    ```
+    The middle point has no offset, creating a straight or slightly curved line.
+  </Step>
+  
+  <Step title="Half Draw (percentage = 0.5)">
+    ```
+    Upper ●
+          | \
+          |  \
+    Middle ●   (pulled back 50%)
+          |  /
+          | /
+    Lower ●
+    ```
+    The middle point moves backward by `drawBackStrength * 0.5`, creating a noticeable curve.
+  </Step>
+  
+  <Step title="Full Draw (percentage = 1.0)">
+    ```
+    Upper ●
+          |  \
+          |   \
+    Middle  ●  (pulled back 100%)
+          |   /
+          |  /
+    Lower ●
+    ```
+    The middle point is fully pulled back by `drawBackStrength`, showing maximum tension.
+  </Step>
+</Steps>
+
+### The Math Behind It
+
+```csharp
+Vector3.Lerp(Vector3.zero, new Vector3(-drawBackStrength, 0, 0), percentage)
+```
+
+- **Start**: `Vector3.zero` (no offset)
+- **End**: `new Vector3(-drawBackStrength, 0, 0)` (full draw-back on X-axis)
+- **Factor**: `percentage` (how long the bow has been drawn)
+
+<Info>
+  The negative X-axis (`-drawBackStrength`) assumes your bow is oriented with the front facing positive X. If your bow faces a different direction, adjust the axis accordingly:
+  - Forward = +Z: Use `new Vector3(0, 0, -drawBackStrength)`
+  - Forward = +Y: Use `new Vector3(0, -drawBackStrength, 0)`
+</Info>
+
+## LineRenderer Configuration
+
+### Critical Settings
+
+<Warning>
+  **You MUST disable "Use World Space" in the LineRenderer component!**
+  
+  The `RenderLine()` method uses `localPosition` for all points, which requires the LineRenderer to work in local space. If "Use World Space" is enabled, the string will render incorrectly.
+</Warning>
+
+To configure your LineRenderer:
+
+1. Add a LineRenderer component to your bow GameObject
+2. **Uncheck "Use World Space"** in the inspector
+3. Set the width curve to make the string thin (e.g., 0.01 units)
+4. Assign a material (Unity's Default-Line material works well)
+5. Set the color to match your bowstring (brown, white, etc.)
+
+### Recommended Settings
+
+```yaml
+LineRenderer Settings:
+  Use World Space: false  # CRITICAL!
+  Width: 0.01
+  Color: White or Brown
+  Material: Default-Line or custom string material
+  Corner Vertices: 4
+  End Cap Vertices: 4
+  Alignment: View
+```
+
+## Code Example
+
+Setting up the LineRenderer programmatically:
+
+```csharp
+void SetupLineRenderer()
+{
+    LineRenderer lr = gameObject.AddComponent<LineRenderer>();
+    
+    // Critical: disable world space
+    lr.useWorldSpace = false;
+    
+    // Visual settings
+    lr.material = new Material(Shader.Find("Sprites/Default"));
+    lr.startColor = Color.white;
+    lr.endColor = Color.white;
+    lr.startWidth = 0.01f;
+    lr.endWidth = 0.01f;
+    
+    // Smoothing
+    lr.numCornerVertices = 4;
+    lr.numCapVertices = 4;
+}
+```
+
+## Troubleshooting
+
+<AccordionGroup>
+  <Accordion title="String appears in wrong location">
+    **Cause**: "Use World Space" is enabled
+    
+    **Solution**: Disable "Use World Space" in the LineRenderer component inspector
+  </Accordion>
+  
+  <Accordion title="String doesn't pull back when drawing">
+    **Cause**: `drawBackStrength` is too small or the middle point isn't assigned
+    
+    **Solution**: 
+    - Increase `drawBackStrength` (try 0.1 or 0.2)
+    - Verify `middleLine` transform is assigned in the inspector
+    - Check that the bow is being drawn (mouse is held)
+  </Accordion>
+  
+  <Accordion title="String pulls in wrong direction">
+    **Cause**: The X-axis isn't aligned with your bow's backward direction
+    
+    **Solution**: Modify line 73 in Bow.cs to use the correct axis:
+    ```csharp
+    // If bow faces +Z, use:
+    lineRenderer.SetPosition(1, middleLine.localPosition + Vector3.Lerp(Vector3.zero, new Vector3(0, 0, -drawBackStrength), percentage));
+    ```
+  </Accordion>
+  
+  <Accordion title="String looks jagged or angular">
+    **Cause**: Not enough vertices for smoothing
+    
+    **Solution**: Increase Corner Vertices and End Cap Vertices in LineRenderer settings (try 8-10)
+  </Accordion>
+</AccordionGroup>
+
+## Advanced Customization
+
+### Variable Width String
+
+Make the string thinner in the middle:
+
+```csharp
+void Start()
+{
+    lineRenderer.widthCurve = AnimationCurve.EaseInOut(0, 0.02f, 1, 0.01f);
+}
+```
+
+### Color Gradient Based on Draw
+
+Change string color as it's drawn:
+
+```csharp
+private void RenderLine()
+{
+    // ... existing code ...
+    
+    // Add color change
+    Color drawColor = Color.Lerp(Color.white, Color.red, percentage);
+    lineRenderer.startColor = drawColor;
+    lineRenderer.endColor = drawColor;
+}
+```
+
+### Multiple Points for Smoother Curve
+
+The current system uses 3 points, but you could expand to 5 or more for a more realistic string curve:
+
+```csharp
+private void RenderLine()
+{
+    lineRenderer.positionCount = 5;
+    lineRenderer.SetPosition(0, upperLine.localPosition);
+    lineRenderer.SetPosition(1, upperLine.localPosition + middleLine.localPosition * 0.5f + drawOffset * 0.3f);
+    lineRenderer.SetPosition(2, middleLine.localPosition + drawOffset);
+    lineRenderer.SetPosition(3, lowerLine.localPosition + middleLine.localPosition * 0.5f + drawOffset * 0.3f);
+    lineRenderer.SetPosition(4, lowerLine.localPosition);
+}
+```
+
+<Note>
+  Adding more points to the line renderer is listed as a future improvement in the README's "Things to Implement" section.
+</Note>

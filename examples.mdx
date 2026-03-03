@@ -1,0 +1,268 @@
+---
+title: 'Usage Examples'
+description: 'Complete examples and usage patterns for the Bow system'
+---
+
+## Basic Setup Example
+
+Here's a complete example of setting up the Bow system in your Unity project.
+
+### Step 1: Prepare Your GameObjects
+
+1. Create a bow GameObject in your scene
+2. Create an arrow prefab with a Rigidbody component
+3. Add a LineRenderer component to your bow
+4. Create three empty GameObjects as children of the bow for the string anchor points (upper, middle, lower)
+
+### Step 2: Attach Scripts
+
+<Steps>
+  <Step title="Add Bow Script">
+    Drag the `Bow.cs` script onto your bow GameObject
+  </Step>
+  <Step title="Add Arrow Script">
+    Drag the `Arrow.cs` script onto your arrow prefab
+  </Step>
+  <Step title="Configure References">
+    In the Inspector, configure all the required references (see below)
+  </Step>
+</Steps>
+
+### Step 3: Configure Bow Properties
+
+```csharp
+// Example configuration values from Bow.cs
+public class Bow : MonoBehaviour
+{
+    [Header("Bow Settings")]
+    public float minStrength = 2f;        // Minimum force applied
+    public float maxStrength = 30f;       // Maximum force at full draw
+    public float drawTime = 0.35f;        // Time to reach full strength
+    public float drawBackStrength = 0.05f; // Visual string pull distance
+
+    [Header("Projectile")]
+    public GameObject projectilePrefab;    // Your arrow prefab
+    public Transform projectilePoint;      // Spawn position
+    public Vector3 arrowRotation;         // Default arrow rotation
+    public Camera fpCam;                  // First-person camera reference
+}
+```
+
+## Complete Scene Configuration
+
+### Hierarchy Structure
+
+```
+Player
+├── FPCamera
+└── Bow
+    ├── UpperLine (Transform)
+    ├── MiddleLine (Transform)
+    ├── LowerLine (Transform)
+    ├── ProjectilePoint (Transform)
+    └── LineRenderer (Component)
+```
+
+### Inspector Configuration
+
+<AccordionGroup>
+  <Accordion title="Bow Settings">
+    - **Min Strength**: `2` - Minimum force for quick shots
+    - **Max Strength**: `30` - Maximum force for fully drawn bow
+    - **Draw Time**: `0.35` - Time in seconds to reach full draw
+    - **Draw Back Strength**: `0.05` - How far the string pulls back visually
+  </Accordion>
+  
+  <Accordion title="Projectile Settings">
+    - **Projectile Prefab**: Drag your arrow prefab here
+    - **Projectile Point**: The transform where arrows spawn (usually near the bow string)
+    - **Arrow Rotation**: Default rotation offset (e.g., `(0, 0, 0)`)
+    - **FP Cam**: Reference to your first-person camera
+  </Accordion>
+  
+  <Accordion title="Line Renderer Settings">
+    - **Upper Line**: Top anchor point of the bow string
+    - **Middle Line**: Middle point of the bow string (gets pulled back)
+    - **Lower Line**: Bottom anchor point of the bow string
+    - **Line Renderer**: The LineRenderer component on the bow
+    
+    <Warning>
+      Make sure to **disable "Use World Space"** in your LineRenderer component!
+    </Warning>
+  </Accordion>
+</AccordionGroup>
+
+## Code Examples
+
+### How the Draw Mechanic Works
+
+The bow uses mouse input to control drawing and releasing:
+
+```csharp
+void Update()
+{
+    if (Input.GetMouseButton(0))
+        DrawBow();  // Hold to draw
+
+    if (Input.GetMouseButtonUp(0))
+        StopDrawBow();  // Release to fire
+}
+```
+
+### Drawing the Bow
+
+When you hold the mouse button, the bow calculates draw percentage:
+
+```csharp
+private void DrawBow()
+{
+    currentDrawTime += Time.deltaTime;
+    percentage = currentDrawTime / drawTime;
+    
+    RenderLine();  // Updates the visual string
+}
+```
+
+### Firing the Arrow
+
+When released, the bow calculates force based on draw time:
+
+```csharp
+private void StopDrawBow()
+{
+    // Instantiate arrow at projectile point
+    GameObject projectile = Instantiate(projectilePrefab, 
+        projectilePoint.position, 
+        Quaternion.Euler(arrowRotation));
+
+    // Calculate force based on draw percentage
+    Vector3 force = ((fpCam.transform.forward * 100) - 
+        projectilePoint.transform.position).normalized * 
+        Mathf.Lerp(minStrength, maxStrength, percentage);
+
+    // Setup arrow rotation
+    projectile.GetComponent<Arrow>().SetDefaultRot(arrowRotation + force);
+
+    // Apply physics force
+    projectile.GetComponent<Rigidbody>().AddForce(force, ForceMode.VelocityChange);
+
+    // Reset for next shot
+    percentage = 0f;
+    currentDrawTime = 0f;
+    RenderLine();
+}
+```
+
+### Arrow Rotation System
+
+The Arrow script automatically rotates the arrow to face its direction of travel:
+
+```csharp
+public class Arrow : MonoBehaviour
+{
+    private Rigidbody rb;
+    private Vector3 defaultRot = Vector3.zero;
+
+    void Update()
+    {
+        // Only rotate if arrow is moving
+        if (rb.velocity.magnitude < 0.05f)
+            return;
+
+        // Align arrow with velocity direction
+        transform.rotation = Quaternion.Euler(defaultRot) * 
+            Quaternion.LookRotation(rb.velocity);
+    }
+}
+```
+
+## Advanced Use Cases
+
+### Customizing Draw Strength Curve
+
+Modify the force calculation in `Bow.cs:51` to create different draw curves:
+
+```csharp
+// Linear (default)
+float strength = Mathf.Lerp(minStrength, maxStrength, percentage);
+
+// Exponential (more power at full draw)
+float strength = Mathf.Lerp(minStrength, maxStrength, percentage * percentage);
+
+// Smooth curve
+float strength = Mathf.Lerp(minStrength, maxStrength, Mathf.SmoothStep(0, 1, percentage));
+```
+
+### Using Custom Arrow Scripts
+
+If you want to use your own arrow script instead of the provided `Arrow.cs`:
+
+<Steps>
+  <Step title="Remove Arrow References">
+    Remove or comment out line 54 in `Bow.cs`:
+    ```csharp
+    // projectile.GetComponent<Arrow>().SetDefaultRot(arrowRotation + force);
+    ```
+  </Step>
+  <Step title="Implement Your Logic">
+    Add your custom arrow behavior to your own script
+  </Step>
+</Steps>
+
+### Multiple Bow Types
+
+Create different bow variants by adjusting the strength values:
+
+```csharp
+// Light Bow - Fast draw, less damage
+minStrength = 5f;
+maxStrength = 15f;
+drawTime = 0.2f;
+
+// Heavy Bow - Slow draw, high damage  
+minStrength = 10f;
+maxStrength = 50f;
+drawTime = 0.8f;
+
+// Rapid Bow - Very fast, consistent damage
+minStrength = 20f;
+maxStrength = 22f;
+drawTime = 0.1f;
+```
+
+### Adding Trajectory Preview
+
+Add this helper method to visualize arrow trajectory:
+
+```csharp
+private void DrawTrajectory()
+{
+    Vector3 velocity = ((fpCam.transform.forward * 100) - 
+        projectilePoint.transform.position).normalized * 
+        Mathf.Lerp(minStrength, maxStrength, percentage);
+    
+    // Use this velocity to draw a predicted path
+    // (Requires additional LineRenderer for trajectory)
+}
+```
+
+## Common Issues
+
+<Warning>
+  **LineRenderer appears broken or doesn't move**
+  
+  Make sure "Use World Space" is **disabled** in the LineRenderer component settings.
+</Warning>
+
+<Warning>
+  **Arrows fly in wrong direction**
+  
+  Check that:
+  - Your FP Camera reference is set correctly
+  - The arrow rotation offset matches your arrow prefab's orientation
+  - The projectile point is positioned correctly
+</Warning>
+
+<Tip>
+  **Performance Tip**: If you're spawning many arrows, consider using object pooling instead of `Instantiate()` for better performance.
+</Tip>

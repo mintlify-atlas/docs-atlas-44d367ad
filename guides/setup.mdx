@@ -1,0 +1,146 @@
+---
+title: 'Setup Guide'
+description: 'Complete step-by-step guide to setting up the bow system in your Unity project'
+---
+
+This guide will walk you through setting up a fully functional bow system in Unity with procedural string rendering and dynamic arrow physics.
+
+## Prerequisites
+
+Before you begin, ensure you have:
+- Unity 2019.4 or later
+- A first-person camera set up in your scene
+- Basic knowledge of Unity's Inspector and GameObject hierarchy
+
+## Installation
+
+<Steps>
+  <Step title="Add Scripts to Project">
+    Copy the `Bow.cs` and `Arrow.cs` scripts into your Unity project's `Scripts` folder.
+    
+    The `Bow.cs` script handles the bow mechanics, string rendering, and arrow firing. The `Arrow.cs` script manages arrow rotation during flight.
+  </Step>
+
+  <Step title="Create Bow GameObject Hierarchy">
+    Create the following GameObject hierarchy in your scene:
+    
+    ```
+    Bow (parent)
+    ├── BowModel (your 3D bow mesh)
+    ├── StringPoints
+    │   ├── UpperPoint
+    │   ├── MiddlePoint
+    │   └── LowerPoint
+    ├── ProjectileSpawnPoint
+    └── LineRenderer
+    ```
+    
+    Position the string points at the top, middle, and bottom of where your bowstring should attach. The `ProjectileSpawnPoint` should be placed where arrows will spawn when fired.
+  </Step>
+
+  <Step title="Attach Bow Script">
+    Select the main `Bow` GameObject and click **Add Component** > **Bow** in the Inspector.
+  </Step>
+
+  <Step title="Configure LineRenderer Component">
+    Add a LineRenderer component to your Bow GameObject:
+    
+    1. Click **Add Component** > **Effects** > **Line Renderer**
+    2. Configure the following settings:
+       - **Width**: Set to ~0.02 for a thin string appearance
+       - **Material**: Create or assign a material for the string
+       - **Use World Space**: **UNCHECK THIS** (Critical!)
+    
+    <Warning>
+      You must disable "Use World Space" in the LineRenderer component, otherwise the string will not render correctly relative to the bow.
+    </Warning>
+  </Step>
+
+  <Step title="Assign String Transform Points">
+    In the Bow script component, assign the transform references:
+    
+    - **Upper Line**: Drag the `UpperPoint` GameObject
+    - **Middle Line**: Drag the `MiddlePoint` GameObject  
+    - **Lower Line**: Drag the `LowerPoint` GameObject
+    - **Line Renderer**: Drag the LineRenderer component
+    
+    These points define the three-point bezier curve for the bowstring.
+  </Step>
+
+  <Step title="Create Arrow Prefab">
+    Create an arrow prefab with the following components:
+    
+    1. Create a new GameObject named "Arrow"
+    2. Add your arrow 3D model as a child
+    3. Add a **Rigidbody** component:
+       - **Mass**: 0.1 to 0.5 (lighter = further flight)
+       - **Drag**: 0.1 to 0.3 (affects air resistance)
+       - **Angular Drag**: 0.05
+       - **Use Gravity**: Enabled
+    4. Add a **Collider** component (Capsule or Box Collider)
+    5. Attach the **Arrow.cs** script
+    6. Save as a prefab in your Project folder
+    
+    <Tip>
+      For realistic arrow physics, use a mass between 0.1-0.3 and experiment with drag values between 0.1-0.5.
+    </Tip>
+  </Step>
+
+  <Step title="Configure Bow Properties">
+    Back on the Bow script, configure the remaining properties:
+    
+    **Bow Settings:**
+    - **Min Strength**: `2` (minimum force applied to arrow)
+    - **Max Strength**: `30` (maximum force at full draw)
+    - **Draw Time**: `0.35` (seconds to reach full draw)
+    - **Draw Back Strength**: `0.05` (visual string pullback distance)
+    
+    **Projectile:**
+    - **Projectile Prefab**: Drag your arrow prefab here
+    - **Projectile Point**: Drag the `ProjectileSpawnPoint` GameObject
+    - **Arrow Rotation**: Set to `(0, 0, 0)` initially, adjust if needed
+    - **Fp Cam**: Drag your first-person Camera
+  </Step>
+
+  <Step title="Test the Setup">
+    Enter Play mode and test:
+    
+    1. **Hold left mouse button** to draw the bow
+    2. Watch the string pull back as you hold
+    3. **Release left mouse button** to fire
+    4. Arrow should fly in the direction the camera is facing
+    
+    The longer you hold, the more force is applied (up to the draw time limit).
+  </Step>
+</Steps>
+
+## Rigidbody Configuration Details
+
+The arrow's Rigidbody settings significantly impact flight behavior:
+
+| Property | Recommended Value | Effect |
+|----------|------------------|--------|
+| Mass | 0.1 - 0.5 | Lower = travels further, higher = more realistic |
+| Drag | 0.1 - 0.3 | Air resistance during flight |
+| Angular Drag | 0.05 | Prevents excessive rotation |
+| Use Gravity | ✓ Enabled | Creates realistic arc trajectory |
+
+<Note>
+  The force calculation in `Bow.cs:51` uses `ForceMode.VelocityChange`, which makes the force independent of the arrow's mass. This ensures consistent behavior regardless of Rigidbody mass settings.
+</Note>
+
+## Camera Setup
+
+The bow requires a reference to your first-person camera (`fpCam` property in `Bow.cs:18`). This camera:
+- Determines the firing direction of arrows
+- Should be a child of your player controller
+- Must have the `Camera` component attached
+
+The force calculation uses `fpCam.transform.forward` to aim arrows where you're looking.
+
+## Next Steps
+
+Now that your bow is set up:
+- Learn how to [customize bow behavior](/guides/customization)
+- Troubleshoot common issues in the [troubleshooting guide](/guides/troubleshooting)
+- Add sound effects and visual effects to enhance the experience

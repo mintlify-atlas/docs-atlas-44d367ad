@@ -1,0 +1,53 @@
+---
+title: 'Arrow'
+description: 'Arrow class API reference for the Bow Unity system'
+---
+
+## Overview
+
+The `Arrow` class is a MonoBehaviour that handles arrow projectile behavior. It automatically rotates the arrow to align with its velocity direction while maintaining a base rotation offset.
+
+## Class Definition
+
+```csharp
+public class Arrow : MonoBehaviour
+```
+
+## Fields
+
+<ParamField path="rb" type="Rigidbody">
+  Private reference to the arrow's Rigidbody component, cached in the Start method
+</ParamField>
+
+<ParamField path="defaultRot" type="Vector3" default="Vector3.zero">
+  Private base rotation offset applied to the arrow's orientation. Set via the `SetDefaultRot` method
+</ParamField>
+
+## Methods
+
+### SetDefaultRot
+
+```csharp
+public void SetDefaultRot(Vector3 rot)
+```
+
+Sets the default rotation offset for the arrow.
+
+<ParamField path="rot" type="Vector3">
+  The rotation vector to use as the base rotation offset
+</ParamField>
+
+### Update
+
+```csharp
+void Update()
+```
+
+Called every frame to update the arrow's rotation. This method:
+- Checks if the arrow's velocity magnitude is below 0.05f
+- If velocity is too low, skips rotation updates (returns early)
+- Otherwise, rotates the arrow to face the direction of its velocity, combined with the default rotation offset
+
+The rotation is calculated as: `Quaternion.Euler(defaultRot) * Quaternion.LookRotation(rb.velocity)`
+
+This ensures the arrow points in the direction it's traveling while maintaining the base rotation offset set by `SetDefaultRot`.

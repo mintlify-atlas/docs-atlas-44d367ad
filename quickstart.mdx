@@ -1,80 +1,234 @@
 ---
-title: "Quickstart"
-description: "Start building awesome documentation in minutes"
+title: Quick Start
+description: Set up your first functional bow and arrow system in Unity
 ---
 
-## Get started in three steps
+# Quick Start
 
-Get your documentation site running locally and make your first customization.
+This guide will walk you through creating a complete, working bow and arrow system from scratch.
 
-### Step 1: Set up your local environment
+## Prerequisites
+
+- Unity project with Bow scripts installed
+- A first-person camera in your scene
+- Basic bow and arrow 3D models (or Unity primitives for testing)
+
+## Setup Your Bow
+
+<Steps>
+  <Step title="Create the Bow GameObject">
+    Create or import a bow model in your scene. This will be the parent object that holds the Bow component.
+    
+    1. Right-click in the Hierarchy
+    2. Create a new GameObject and name it "Bow"
+    3. Position it appropriately for your first-person view
+  </Step>
+
+  <Step title="Add the Bow Component">
+    Select your Bow GameObject and add the `Bow` script component:
+    
+    1. Click "Add Component" in the Inspector
+    2. Search for "Bow" and select it
+  </Step>
+
+  <Step title="Create Line Renderer Points">
+    The bow uses three reference points for the procedural string. Create them as child objects:
+    
+    1. Create three empty GameObjects as children of your Bow
+    2. Name them: `UpperLine`, `MiddleLine`, `LowerLine`
+    3. Position them at the top, middle, and bottom of your bow respectively
+    
+    Example positions (adjust based on your bow model):
+    ```
+    UpperLine:  (0, 0.5, 0)
+    MiddleLine: (0, 0, 0)
+    LowerLine:  (0, -0.5, 0)
+    ```
+  </Step>
+
+  <Step title="Add and Configure Line Renderer">
+    Add a Line Renderer component to visualize the bowstring:
+    
+    1. Select the Bow GameObject
+    2. Add Component → Effects → Line Renderer
+    3. Configure the Line Renderer:
+       - Width: 0.02
+       - Material: Choose a suitable material (or create a simple colored material)
+       - Positions: Will be set automatically by the script
+    
+    <Warning>
+      **Critical Setting**: Disable "Use World Space" in the Line Renderer component! The string rendering will not work correctly if this is enabled.
+    </Warning>
+  </Step>
+
+  <Step title="Create Arrow Prefab">
+    Create an arrow prefab with physics:
+    
+    1. Create a new GameObject named "Arrow"
+    2. Add a 3D model or use a Capsule primitive
+    3. Add a Rigidbody component:
+       - Mass: 0.05
+       - Drag: 0.1
+       - Angular Drag: 0.5
+       - Use Gravity: Enabled
+    4. Add a Collider component (Capsule or Mesh Collider)
+    5. Add the `Arrow` script component
+    6. Drag the Arrow GameObject into your Project window to create a prefab
+    7. Delete the Arrow from the scene (we'll spawn it via the Bow script)
+  </Step>
+
+  <Step title="Create Projectile Spawn Point">
+    Create an empty GameObject as a child of the Bow to define where arrows spawn:
+    
+    1. Right-click the Bow GameObject
+    2. Create Empty Child
+    3. Name it "ProjectilePoint"
+    4. Position it at the middle of the bow where the arrow should rest
+  </Step>
+
+  <Step title="Configure Bow Properties">
+    Select your Bow GameObject and configure the following properties in the Inspector:
+    
+    ### Bow Settings
+    - **Min Strength**: `2` - Minimum force applied to the arrow
+    - **Max Strength**: `30` - Maximum force when fully drawn
+    - **Draw Time**: `0.35` - Seconds to reach full strength
+    - **Draw Back Strength**: `0.05` - How far the string pulls back visually
+    
+    ### Projectile
+    - **Projectile Prefab**: Drag your Arrow prefab here
+    - **Projectile Point**: Drag the ProjectilePoint GameObject here
+    - **Arrow Rotation**: `(0, 0, 0)` - Adjust if your arrow model needs rotation offset
+    - **Fp Cam**: Drag your first-person Camera here
+    
+    ### Line Renderer References
+    - **Upper Line**: Drag the UpperLine GameObject
+    - **Middle Line**: Drag the MiddleLine GameObject
+    - **Lower Line**: Drag the LowerLine GameObject
+    - **Line Renderer**: Drag the Line Renderer component from the Bow GameObject
+  </Step>
+
+  <Step title="Test Your Bow">
+    Enter Play Mode and test the bow:
+    
+    1. Press and hold the left mouse button to draw the bow
+    2. Watch the string pull back dynamically
+    3. Release to fire an arrow
+    4. The longer you hold, the stronger the shot (up to Draw Time limit)
+  </Step>
+</Steps>
+
+## Understanding the Code
+
+Here's how the bow system works:
+
+### Drawing Mechanics
+
+The `Bow.cs` script handles the drawing logic:
+
+```csharp Scripts/Bow.cs
+private void DrawBow()
+{
+    currentDrawTime += Time.deltaTime;
+    percentage = currentDrawTime / drawTime;
+    
+    RenderLine();
+}
+```
+
+The draw percentage increases over time until it reaches the `drawTime` threshold.
+
+### Force Calculation
+
+When you release the bow, force is calculated based on draw percentage:
+
+```csharp Scripts/Bow.cs
+// Calculate Force
+Vector3 force = ((fpCam.transform.forward * 100) - projectilePoint.transform.position).normalized 
+                * Mathf.Lerp(minStrength, maxStrength, percentage);
+
+// Add Force
+projectile.GetComponent<Rigidbody>().AddForce(force, ForceMode.VelocityChange);
+```
+
+The force is interpolated between `minStrength` and `maxStrength` based on how long the bow was drawn.
+
+### String Visualization
+
+The bowstring is rendered procedurally:
+
+```csharp Scripts/Bow.cs
+private void RenderLine()
+{
+    lineRenderer.positionCount = 3;
+    lineRenderer.SetPosition(0, upperLine.localPosition);
+    lineRenderer.SetPosition(2, lowerLine.localPosition);
+    
+    // Middle Pos - pulls back based on draw percentage
+    lineRenderer.SetPosition(1, middleLine.localPosition + 
+        Vector3.Lerp(Vector3.zero, new Vector3(-drawBackStrength, 0, 0), percentage));
+}
+```
+
+### Arrow Rotation
+
+The `Arrow.cs` script makes arrows rotate to face their direction of travel:
+
+```csharp Scripts/Arrow.cs
+void Update()
+{
+    if (rb.velocity.magnitude < 0.05f)
+        return;
+    
+    transform.rotation = Quaternion.Euler(defaultRot) * Quaternion.LookRotation(rb.velocity);
+}
+```
+
+## Customization Tips
 
 <AccordionGroup>
-  <Accordion icon="copy" title="Clone your docs locally">
-    During the onboarding process, you created a GitHub repository with your docs content if you didn't already have one. You can find a link to this repository in your [dashboard](https://dashboard.mintlify.com).
-    
-    To clone the repository locally so that you can make and preview changes to your docs, follow the [Cloning a repository](https://docs.github.com/en/repositories/creating-and-managing-repositories/cloning-a-repository) guide in the GitHub docs.
+  <Accordion title="Adjust Draw Strength">
+    Modify `minStrength` and `maxStrength` to change the power range:
+    - Lower values: Shorter range, more controlled
+    - Higher values: Longer range, more powerful
   </Accordion>
-  <Accordion icon="rectangle-terminal" title="Start the preview server">
-    1. Install the Mintlify CLI: `npm i -g mint`
-    2. Navigate to your docs directory and run: `mint dev`
-    3. Open `http://localhost:3000` to see your docs live!
-    
-    <Tip>Your preview updates automatically as you edit files.</Tip>
+  
+  <Accordion title="Change Draw Speed">
+    Modify `drawTime` to control how quickly the bow reaches full strength:
+    - Lower values: Faster draw (arcade-style)
+    - Higher values: Slower draw (realistic)
   </Accordion>
-</AccordionGroup>
-
-### Step 2: Deploy your changes
-
-<AccordionGroup>
-  <Accordion icon="github" title="Install our GitHub app">
-    Install the Mintlify GitHub app from your [dashboard](https://dashboard.mintlify.com/settings/organization/github-app).
+  
+  <Accordion title="Customize String Appearance">
+    Adjust the Line Renderer component:
+    - Change width for thicker/thinner string
+    - Apply custom materials for different visual styles
+    - Modify `drawBackStrength` to change how far the string pulls back
+  </Accordion>
+  
+  <Accordion title="Use Custom Arrow Physics">
+    If you want to use your own arrow script instead of the included `Arrow.cs`:
     
-    Our GitHub app automatically deploys your changes to your docs site, so you don't need to manage deployments yourself.
-</Accordion>
-<Accordion icon="palette" title="Update your site name and colors">
-    For a first change, let's update the name and colors of your docs site.
-
-    1. Open `docs.json` in your editor.
-    2. Change the `"name"` field to your project name.
-    3. Update the `"colors"` to match your brand.
-    4. Save and see your changes instantly at `http://localhost:3000`.
-
-    <Tip>Try changing the primary color to see an immediate difference!</Tip>
+    1. Remove the Arrow component from your arrow prefab
+    2. In `Bow.cs`, comment out or remove line 54:
+    ```csharp
+    // projectile.GetComponent<Arrow>().SetDefaultRot(arrowRotation + force);
+    ```
+    3. Implement your own rotation/physics logic
   </Accordion>
 </AccordionGroup>
-
-### Step 3: Go live
-
-<Accordion icon="rocket" title="Publish your docs">
-  1. Commit and push your changes.
-  2. Your docs will update and be live in moments!
-</Accordion>
-
-## Next steps
-
-Now that you have your docs running, explore these key features:
-
-<CardGroup cols={2}>
-
-<Card title="Write Content" icon="pen-to-square" href="/essentials/markdown">
-  Learn MDX syntax and start writing your documentation.
-</Card>
-
-<Card title="Customize style" icon="palette" href="/essentials/settings">
-  Make your docs match your brand perfectly.
-</Card>
-
-<Card title="Add code examples" icon="square-code" href="/essentials/code">
-  Include syntax-highlighted code blocks.
-</Card>
-
-<Card title="API documentation" icon="code" href="/api-reference/introduction">
-  Auto-generate API docs from OpenAPI specs.
-</Card>
-
-</CardGroup>
 
 <Note>
-  **Need help?** See our [full documentation](https://mintlify.com/docs) or join our [community](https://mintlify.com/community).
+  The Arrow script is solely for rotation during flight. If you want arrows to stick to surfaces or implement damage, you'll need to add additional scripts to handle collision events.
 </Note>
+
+## Next Steps
+
+<CardGroup cols={2}>
+  <Card title="API Reference" icon="code" href="/api/bow-class">
+    Explore all available properties and methods in detail
+  </Card>
+  <Card title="Advanced Examples" icon="flask" href="/examples">
+    Learn advanced techniques and customizations
+  </Card>
+</CardGroup>

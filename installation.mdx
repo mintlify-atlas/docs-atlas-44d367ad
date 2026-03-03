@@ -1,0 +1,67 @@
+---
+title: Installation
+description: Add the Bow system to your Unity project
+---
+
+# Installation
+
+Get the Bow system up and running in your Unity project with these simple steps.
+
+## Requirements
+
+Before installing, ensure you have:
+
+- Unity Editor (2019.4 or later recommended)
+- A Unity project with physics enabled
+- Basic understanding of Unity's component system
+
+## Installation Steps
+
+<Steps>
+  <Step title="Download the Source Files">
+    Clone or download the Bow repository from GitHub:
+    
+    ```bash
+    git clone https://github.com/your-repo/bow-unity.git
+    ```
+    
+    Alternatively, download the repository as a ZIP file and extract it.
+  </Step>
+
+  <Step title="Locate the Scripts">
+    Navigate to the `Scripts` folder in the downloaded repository. You'll find two essential files:
+    
+    - `Bow.cs` - The main bow controller script
+    - `Arrow.cs` - The arrow rotation handler
+  </Step>
+
+  <Step title="Add Scripts to Your Project">
+    Copy both `Bow.cs` and `Arrow.cs` into your Unity project's `Assets/Scripts` folder (create the folder if it doesn't exist).
+    
+    You can do this by:
+    - Dragging the files directly into Unity's Project window
+    - Copying the files into your project's Assets folder in your file explorer
+  </Step>
+
+  <Step title="Verify Import">
+    Check Unity's Console window for any compilation errors. If the scripts imported successfully, you should see no errors and the scripts will be available to attach to GameObjects.
+  </Step>
+</Steps>
+
+## What's Next?
+
+<Card title="Quick Start Guide" icon="rocket" href="/quickstart">
+  Learn how to set up your first bow and arrow system
+</Card>
+
+## Troubleshooting
+
+<AccordionGroup>
+  <Accordion title="Scripts won't compile">
+    Ensure you're using a compatible Unity version (2019.4+) and that both scripts are in the same folder or namespace.
+  </Accordion>
+  
+  <Accordion title="Missing UnityEngine references">
+    Make sure the scripts are placed inside your Unity project's Assets folder, not outside of it.
+  </Accordion>
+</AccordionGroup>

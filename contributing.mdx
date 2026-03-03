@@ -1,0 +1,275 @@
+---
+title: 'Contributing Guide'
+description: 'How to contribute to the Bow Unity project'
+---
+
+## Welcome Contributors!
+
+Contributions are welcome! This guide will help you contribute effectively to the Bow Unity project.
+
+## Getting Started
+
+### Prerequisites
+
+- Unity (version compatible with the project)
+- Basic understanding of C# and Unity physics
+- Git for version control
+
+### Setting Up Your Development Environment
+
+<Steps>
+  <Step title="Fork the Repository">
+    Fork the project repository to your GitHub account
+  </Step>
+  <Step title="Clone Your Fork">
+    ```bash
+    git clone https://github.com/YOUR_USERNAME/bow-unity.git
+    ```
+  </Step>
+  <Step title="Open in Unity">
+    Open the project in Unity and verify everything works
+  </Step>
+  <Step title="Create a Branch">
+    ```bash
+    git checkout -b feature/your-feature-name
+    ```
+  </Step>
+</Steps>
+
+## How to Submit Pull Requests
+
+### Pull Request Process
+
+<Steps>
+  <Step title="Make Your Changes">
+    Implement your feature or bug fix following the code style guidelines below
+  </Step>
+  <Step title="Test Thoroughly">
+    Test your changes in Unity to ensure they work as expected and don't break existing functionality
+  </Step>
+  <Step title="Commit Your Changes">
+    ```bash
+    git add .
+    git commit -m "Add: Brief description of your changes"
+    ```
+  </Step>
+  <Step title="Push to Your Fork">
+    ```bash
+    git push origin feature/your-feature-name
+    ```
+  </Step>
+  <Step title="Open a Pull Request">
+    Go to the original repository and open a pull request from your branch
+  </Step>
+</Steps>
+
+### Pull Request Guidelines
+
+- **Clear Title**: Use a descriptive title that summarizes your changes
+- **Description**: Explain what changes you made and why
+- **Reference Issues**: If your PR addresses an issue, reference it (e.g., "Fixes #123")
+- **Screenshots**: Include screenshots or GIFs if your changes affect visual elements
+- **Testing**: Describe how you tested your changes
+
+## Code Style Guidelines
+
+To maintain consistency with the existing codebase, please follow these conventions:
+
+### C# Naming Conventions
+
+```csharp
+// Public fields: camelCase
+public float minStrength = 2f;
+public GameObject projectilePrefab;
+
+// Private fields: camelCase
+private float percentage = 0;
+private float currentDrawTime = 0;
+
+// Methods: PascalCase
+private void DrawBow()
+private void StopDrawBow()
+private void RenderLine()
+
+// Properties: PascalCase
+public Transform UpperLine { get; set; }
+```
+
+### Code Organization
+
+```csharp
+public class ExampleScript : MonoBehaviour
+{
+    // 1. Serialized fields with [Header] attributes
+    [Header("Settings")]
+    public float exampleValue = 1f;
+    
+    [Header("References")]
+    public Transform exampleTransform;
+    
+    // 2. Private fields
+    private float internalValue = 0;
+    
+    // 3. Unity lifecycle methods
+    void Start() { }
+    void Update() { }
+    
+    // 4. Custom methods
+    private void CustomMethod() { }
+}
+```
+
+### Comments and Documentation
+
+- Use comments to explain **why**, not **what**
+- Add headers to group related fields: `[Header("Bow Settings")]`
+- Keep comments concise and meaningful
+
+### Formatting
+
+- **Indentation**: Use spaces (4 spaces per indent level)
+- **Braces**: Opening brace on same line
+- **Spacing**: Add blank lines between methods for readability
+
+## Planned Features
+
+Here are features that need implementation. Feel free to pick any of these or propose your own!
+
+<AccordionGroup>
+  <Accordion title="Add More Dynamic Points to Line Renderer" icon="bezier-curve">
+    Currently, the bow string uses only 3 points (upper, middle, lower). Adding more points would create a more realistic curved string.
+    
+    **Implementation Ideas:**
+    - Increase `lineRenderer.positionCount` from 3 to 5-7 points
+    - Calculate intermediate positions along a curve
+    - Use Bezier curves or similar for smooth interpolation
+    - Ensure performance isn't significantly impacted
+    
+    **Reference**: `Bow.cs:66-74` - `RenderLine()` method
+  </Accordion>
+  
+  <Accordion title="Clean Up the Scripts" icon="broom">
+    Improve code quality and organization across both scripts.
+    
+    **Potential Improvements:**
+    - Add XML documentation comments
+    - Refactor magic numbers into named constants
+    - Improve variable naming where needed
+    - Add input validation for public fields
+    - Extract hardcoded values (like the `100` in force calculation at `Bow.cs:51`)
+    
+    **Files**: `Bow.cs`, `Arrow.cs`
+  </Accordion>
+  
+  <Accordion title="Add Easing Types to DrawTime" icon="chart-line">
+    Implement different easing functions for more natural bow draw feel.
+    
+    **Easing Types to Add:**
+    - Sine - Smooth, natural feeling
+    - Cubic - More pronounced acceleration
+    - Quadratic - Balanced curve
+    - Exponential - Dramatic power buildup
+    - Elastic - Slight bounce effect
+    
+    **Implementation Approach:**
+    - Create an enum for easing types
+    - Implement easing functions (or use Unity's AnimationCurve)
+    - Apply to percentage calculation in `DrawBow()` method
+    - Allow selection via Inspector
+    
+    **Reference**: `Bow.cs:36-43` - `DrawBow()` method
+  </Accordion>
+  
+  <Accordion title="Add Sound Effects" icon="volume">
+    Implement audio feedback for drawing and releasing the bow.
+    
+    **Sounds Needed:**
+    - Bow draw sound (looping or progressive)
+    - Bow release/shoot sound
+    - String snap/twang sound
+    - Optional: Ambient bow creak sounds
+    
+    **Implementation:**
+    - Add AudioSource component support
+    - Add public AudioClip fields for different sounds
+    - Play draw sound in `DrawBow()` method
+    - Play release sound in `StopDrawBow()` method
+    - Consider pitch variation based on draw strength
+    
+    **Files to Modify**: `Bow.cs`
+  </Accordion>
+</AccordionGroup>
+
+## Project Structure
+
+```
+Bow Unity Project/
+├── Scripts/
+│   ├── Bow.cs          # Main bow mechanics and physics
+│   └── Arrow.cs        # Arrow rotation behavior
+├── Prefabs/
+│   └── Arrow.prefab    # Arrow prefab with Rigidbody
+└── README.md           # Project documentation
+```
+
+## Testing Your Changes
+
+### Testing Checklist
+
+<Steps>
+  <Step title="Basic Functionality">
+    - Bow draws when holding mouse button
+    - Arrow fires when releasing mouse button
+    - Arrow strength increases with draw time
+    - String renders correctly
+  </Step>
+  <Step title="Edge Cases">
+    - Rapid clicking (quick shots)
+    - Holding for extended periods
+    - Firing at different angles
+    - Multiple arrows in the air
+  </Step>
+  <Step title="Performance">
+    - No console errors or warnings
+    - Smooth framerate maintained
+    - Memory usage is stable
+  </Step>
+</Steps>
+
+## License
+
+This project is dedicated to the public domain under the **CC0 1.0 Universal (CC0 1.0) Public Domain Dedication**.
+
+### What This Means
+
+<Info>
+  You can copy, modify, distribute and perform the work, even for commercial purposes, all without asking permission. This is the most permissive license available.
+</Info>
+
+### Your Contributions
+
+By contributing to this project, you agree to dedicate your contributions to the public domain under the same CC0 1.0 license.
+
+**Learn More:**
+- [CC0 Legal Code](https://creativecommons.org/publicdomain/zero/1.0/legalcode)
+- [CC0 Summary](https://creativecommons.org/publicdomain/zero/1.0/)
+
+## Questions or Issues?
+
+If you have questions or run into issues:
+
+1. Check the existing issues on GitHub
+2. Search for similar problems or questions
+3. Open a new issue with detailed information:
+   - Unity version
+   - Steps to reproduce
+   - Expected vs actual behavior
+   - Screenshots or error messages
+
+<Tip>
+  When reporting bugs, include your Unity version and any console errors. This helps maintainers debug issues faster!
+</Tip>
+
+## Recognition
+
+All contributors will be recognized for their contributions to the project. Thank you for helping improve the Bow Unity project!

@@ -1,0 +1,105 @@
+---
+title: 'Bow'
+description: 'Bow class API reference for the Bow Unity system'
+---
+
+## Overview
+
+The `Bow` class is a MonoBehaviour that handles bow drawing mechanics, arrow launching, and bowstring line rendering. It manages the draw strength based on how long the bow is drawn and instantiates arrow projectiles with appropriate force.
+
+## Class Definition
+
+```csharp
+public class Bow : MonoBehaviour
+```
+
+## Bow Settings
+
+<ParamField path="minStrength" type="float" default="2f">
+  Minimum force applied to the arrow when released with no draw time
+</ParamField>
+
+<ParamField path="maxStrength" type="float" default="30f">
+  Maximum force applied to the arrow when fully drawn
+</ParamField>
+
+<ParamField path="drawTime" type="float" default="0.35f">
+  Time in seconds required to fully draw the bow to maximum strength
+</ParamField>
+
+<ParamField path="drawBackStrength" type="float" default="0.05f">
+  Distance the bowstring pulls back when drawn, affecting the line renderer position
+</ParamField>
+
+## Projectile
+
+<ParamField path="projectilePrefab" type="GameObject">
+  The arrow prefab that will be instantiated when the bow is released
+</ParamField>
+
+<ParamField path="projectilePoint" type="Transform">
+  The spawn point where arrows are instantiated when released
+</ParamField>
+
+<ParamField path="arrowRotation" type="Vector3">
+  Base rotation applied to the arrow when instantiated
+</ParamField>
+
+<ParamField path="fpCam" type="Camera">
+  First-person camera used to calculate the arrow's launch direction
+</ParamField>
+
+## Line Rendering
+
+<ParamField path="upperLine" type="Transform">
+  Upper attachment point for the bowstring line renderer
+</ParamField>
+
+<ParamField path="middleLine" type="Transform">
+  Middle point of the bowstring that moves when the bow is drawn
+</ParamField>
+
+<ParamField path="lowerLine" type="Transform">
+  Lower attachment point for the bowstring line renderer
+</ParamField>
+
+<ParamField path="lineRenderer" type="LineRenderer">
+  LineRenderer component that visualizes the bowstring
+</ParamField>
+
+## Methods
+
+### DrawBow
+
+```csharp
+private void DrawBow()
+```
+
+Called while the bow is being drawn (while mouse button is held). Updates the current draw time, calculates the draw percentage, and updates the line renderer to show the bowstring being pulled back.
+
+### StopDrawBow
+
+```csharp
+private void StopDrawBow()
+```
+
+Called when the bow is released. This method:
+- Instantiates the arrow projectile at the projectile point
+- Calculates the launch force based on draw percentage (lerp between minStrength and maxStrength)
+- Sets the arrow's default rotation using the Arrow component's `SetDefaultRot` method
+- Applies the calculated force to the arrow's Rigidbody
+- Resets the draw time and percentage
+- Updates the line renderer to show the relaxed bowstring
+
+### RenderLine
+
+```csharp
+private void RenderLine()
+```
+
+Updates the LineRenderer to visualize the bowstring. Sets three positions:
+- Position 0: Upper line position
+- Position 1: Middle line position, offset by drawBackStrength based on current draw percentage
+- Position 2: Lower line position
+
+The middle position moves backward (negative x direction) proportionally to how much the bow is drawn.

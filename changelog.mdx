@@ -1,0 +1,230 @@
+---
+title: 'Changelog & Roadmap'
+description: 'Current features, version history, and planned improvements for the Bow Unity project'
+---
+
+## Current Version
+
+The Bow Unity project is an actively developed open-source bow and arrow system for Unity.
+
+## Current Features
+
+Here are the features currently implemented in the Bow system:
+
+### Core Mechanics
+
+<CardGroup cols={2}>
+  <Card title="Procedural String" icon="wave-pulse">
+    Dynamic bow string rendering using Unity's LineRenderer component. The string visually pulls back as you draw the bow.
+  </Card>
+  
+  <Card title="Dynamic Projectile Strength" icon="gauge-high">
+    Arrow force scales with draw time. Hold longer for more powerful shots, or quick-fire for rapid but weaker arrows.
+  </Card>
+  
+  <Card title="Easy Setup" icon="puzzle-piece">
+    Simple script-based setup with clear Inspector properties. Drag and drop configuration with minimal coding required.
+  </Card>
+  
+  <Card title="Arrow Rotation System" icon="rotate">
+    Automatic arrow rotation that aligns with velocity direction for realistic arrow flight physics.
+  </Card>
+</CardGroup>
+
+### Technical Features
+
+<AccordionGroup>
+  <Accordion title="Physics-Based Arrow System">
+    - Rigidbody-based physics for realistic projectile motion
+    - Force calculation based on camera direction and draw strength
+    - Velocity-based rotation for natural arrow orientation
+    - Configurable min/max strength values
+  </Accordion>
+  
+  <Accordion title="Visual String Rendering">
+    - Three-point line renderer system (upper, middle, lower)
+    - Dynamic middle point that moves based on draw percentage
+    - Configurable draw back strength for visual feedback
+    - Local space rendering for proper bow movement
+  </Accordion>
+  
+  <Accordion title="Customizable Parameters">
+    - **minStrength**: Minimum arrow force (default: 2)
+    - **maxStrength**: Maximum arrow force (default: 30)
+    - **drawTime**: Time to reach full draw (default: 0.35s)
+    - **drawBackStrength**: Visual string pull distance (default: 0.05)
+    - **arrowRotation**: Default arrow rotation offset
+  </Accordion>
+  
+  <Accordion title="Flexible Architecture">
+    - Modular script design (Bow.cs and Arrow.cs)
+    - Easy to extend or replace Arrow script with custom behavior
+    - Compatible with Unity's prefab system
+    - Works with first-person camera setups
+  </Accordion>
+</AccordionGroup>
+
+## Roadmap
+
+Planned features and improvements for future releases:
+
+### High Priority
+
+<Steps>
+  <Step title="Enhanced String Rendering" icon="bezier-curve">
+    **Add more dynamic points to the line renderer**
+    
+    Currently uses 3 points. Planned enhancement:
+    - Increase to 5-7 points for smoother curves
+    - Implement bezier curve interpolation
+    - More realistic string physics and appearance
+    
+    **Status**: Planned  
+    **Difficulty**: Medium  
+    **Impact**: Visual quality improvement
+  </Step>
+  
+  <Step title="Code Quality Improvements" icon="code">
+    **Clean up the scripts**
+    
+    Planned improvements:
+    - Add XML documentation comments
+    - Refactor magic numbers into constants
+    - Improve code organization
+    - Add input validation
+    
+    **Status**: Planned  
+    **Difficulty**: Low  
+    **Impact**: Maintainability and extensibility
+  </Step>
+</Steps>
+
+### Medium Priority
+
+<AccordionGroup>
+  <Accordion title="Easing System" icon="chart-line">
+    **Add easing types to the DrawTime**
+    
+    Implement different easing functions for more natural feel:
+    
+    | Easing Type | Description | Use Case |
+    |-------------|-------------|----------|
+    | Sine | Smooth, natural | Default bow |
+    | Cubic | Pronounced acceleration | Heavy bow |
+    | Quadratic | Balanced curve | Standard bow |
+    | Exponential | Dramatic buildup | Powerful bow |
+    | Elastic | Slight bounce | Special bows |
+    
+    **Status**: Planned  
+    **Difficulty**: Medium  
+    **Impact**: Feel and game juice
+  </Accordion>
+  
+  <Accordion title="Audio System" icon="volume">
+    **Add sound effects for drawing and releasing the bow**
+    
+    Planned audio features:
+    - Draw sound (progressive or looping)
+    - Release/shoot sound with pitch variation
+    - String snap/twang audio
+    - Ambient bow creak sounds
+    - Volume based on draw strength
+    
+    **Status**: Planned  
+    **Difficulty**: Low-Medium  
+    **Impact**: Immersion and feedback
+  </Accordion>
+</AccordionGroup>
+
+### Community Suggestions
+
+<Info>
+  Have an idea for a new feature? Contributions are welcome! Check the [Contributing Guide](/contributing) to learn how to submit your ideas or implement them yourself.
+</Info>
+
+Potential community-driven features:
+- **Trajectory prediction line** - Visual arc showing arrow path
+- **Multiple arrow types** - Different projectiles with unique properties
+- **Charge effects** - Visual effects during bow draw (particles, glow)
+- **Accuracy system** - Sway or spread based on draw time
+- **Durability system** - Bow degradation over time
+- **Upgrade system** - Modular bow component system
+
+## Version History
+
+### Initial Release
+
+**Features Included:**
+- Basic bow drawing and shooting mechanics
+- Procedural string rendering with LineRenderer
+- Dynamic projectile strength based on draw time
+- Arrow rotation script for realistic flight
+- Inspector-based configuration
+- CC0 public domain license
+
+**Files:**
+- `Bow.cs` - Main bow mechanics (77 lines)
+- `Arrow.cs` - Arrow rotation behavior (31 lines)
+- README with setup instructions
+
+## Development Status
+
+<CardGroup cols={3}>
+  <Card title="Stable" icon="check" color="#10b981">
+    Core shooting mechanics and physics
+  </Card>
+  
+  <Card title="In Progress" icon="spinner" color="#f59e0b">
+    Code cleanup and documentation
+  </Card>
+  
+  <Card title="Planned" icon="list-check" color="#6366f1">
+    4 major features in roadmap
+  </Card>
+</CardGroup>
+
+## Contributing to the Roadmap
+
+Want to help implement these features?
+
+<Steps>
+  <Step title="Pick a Feature">
+    Choose a feature from the roadmap that interests you
+  </Step>
+  <Step title="Check Issues">
+    Look for existing GitHub issues related to that feature
+  </Step>
+  <Step title="Start Development">
+    Fork the repo and start implementing (see [Contributing Guide](/contributing))
+  </Step>
+  <Step title="Submit PR">
+    Open a pull request with your implementation
+  </Step>
+</Steps>
+
+## Release Philosophy
+
+This project follows these principles:
+
+<Note>
+  **Simplicity First**: Features should be easy to use and understand
+  
+  **Performance Conscious**: Maintain good performance even with many arrows
+  
+  **Extensible Design**: Users should be able to customize and extend functionality
+  
+  **Public Domain**: All code remains CC0 licensed for maximum freedom
+</Note>
+
+## Stay Updated
+
+To stay informed about updates and new features:
+
+- Watch the GitHub repository for releases
+- Check the issues page for active development discussions
+- Review pull requests to see upcoming features
+- Join the community discussions
+
+<Tip>
+  Star the repository on GitHub to show your support and stay notified of major updates!
+</Tip>

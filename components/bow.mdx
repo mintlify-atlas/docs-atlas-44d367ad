@@ -1,0 +1,166 @@
+---
+title: 'Bow Component'
+description: 'Main component for the bow mechanics, handling draw strength, projectile launching, and procedural string rendering'
+---
+
+## Overview
+
+The `Bow` component is the core script that handles all bow functionality including:
+- Draw strength calculation based on hold time
+- Projectile instantiation and force application
+- Procedural bowstring rendering using Unity's LineRenderer
+- Input handling for drawing and releasing the bow
+
+Attach this script to your bow GameObject in the scene.
+
+## Properties
+
+### Bow Settings
+
+<ParamField path="minStrength" type="float" default="2f">
+  The minimum force applied to the projectile when released immediately without drawing. This represents the weakest possible shot.
+</ParamField>
+
+<ParamField path="maxStrength" type="float" default="30f">
+  The maximum force applied to the projectile when the bow is fully drawn. This is reached after holding for the full `drawTime` duration.
+</ParamField>
+
+<ParamField path="drawTime" type="float" default="0.35f">
+  The time in seconds required to reach maximum draw strength. The bow interpolates between `minStrength` and `maxStrength` over this duration.
+</ParamField>
+
+<ParamField path="drawBackStrength" type="float" default="0.05f">
+  Controls how far the bowstring is visually pulled back when drawing. This is a visual-only property that affects the LineRenderer's middle point position.
+</ParamField>
+
+### Projectile Settings
+
+<ParamField path="projectilePrefab" type="GameObject" required>
+  Reference to the arrow prefab that will be instantiated when the bow is released. Should have an `Arrow` component and `Rigidbody` attached.
+</ParamField>
+
+<ParamField path="projectilePoint" type="Transform" required>
+  The spawn position for the arrow. Typically positioned at the front of the bow where the arrow would rest.
+</ParamField>
+
+<ParamField path="arrowRotation" type="Vector3" default="Vector3.zero">
+  Default rotation offset applied to the arrow when spawned. Allows you to adjust the arrow's initial orientation.
+</ParamField>
+
+<ParamField path="fpCam" type="Camera" required>
+  Reference to the first-person camera. Used to calculate the forward direction for projectile force.
+</ParamField>
+
+### Line Renderer References
+
+<ParamField path="upperLine" type="Transform" required>
+  The upper attachment point for the bowstring. Position this at the top of the bow where the string connects.
+</ParamField>
+
+<ParamField path="middleLine" type="Transform" required>
+  The middle point of the bowstring. This point moves backward when the bow is drawn, creating the draw-back effect.
+</ParamField>
+
+<ParamField path="lowerLine" type="Transform" required>
+  The lower attachment point for the bowstring. Position this at the bottom of the bow where the string connects.
+</ParamField>
+
+<ParamField path="lineRenderer" type="LineRenderer" required>
+  Reference to the LineRenderer component that renders the bowstring. Must have "Use World Space" disabled.
+</ParamField>
+
+## How It Works
+
+### Drawing the Bow
+
+The `DrawBow()` method is called continuously while the left mouse button is held:
+
+```csharp
+private void DrawBow()
+{
+    currentDrawTime += Time.deltaTime;
+    percentage = currentDrawTime / drawTime;
+
+    RenderLine();
+}
+```
+
+- **currentDrawTime** accumulates the time the bow has been drawn
+- **percentage** represents how fully the bow is drawn (0 to 1+)
+- The bowstring is re-rendered each frame to show the draw-back effect
+
+### Releasing the Bow
+
+When the mouse button is released, `StopDrawBow()` handles the arrow launch:
+
+```csharp
+private void StopDrawBow()
+{
+    //Instantiating Projectile
+    GameObject projectile = Instantiate(projectilePrefab, projectilePoint.position, Quaternion.Euler(arrowRotation));
+
+    //Calculate Force
+    Vector3 force = ((fpCam.transform.forward * 100) - projectilePoint.transform.position).normalized * Mathf.Lerp(minStrength, maxStrength, percentage);
+
+    //Setup Rotation Arrow Component
+    projectile.GetComponent<Arrow>().SetDefaultRot(arrowRotation + force);
+
+    //Add Force
+    projectile.GetComponent<Rigidbody>().AddForce(force, ForceMode.VelocityChange);
+
+    //Reset Force & Percentage
+    percentage = 0f;
+    currentDrawTime = 0f;
+
+    RenderLine();
+}
+```
+
+### Force Calculation
+
+The force applied to the arrow uses a sophisticated calculation:
+
+```csharp
+Vector3 force = ((fpCam.transform.forward * 100) - projectilePoint.transform.position).normalized 
+                * Mathf.Lerp(minStrength, maxStrength, percentage);
+```
+
+1. **Direction**: Calculate a point 100 units forward from the camera, subtract the projectile spawn position, then normalize
+2. **Magnitude**: Lerp between `minStrength` and `maxStrength` based on the draw percentage
+3. **Result**: A direction vector scaled by the appropriate strength
+
+This ensures the arrow flies toward where the camera is looking with force proportional to draw time.
+
+## Code Example
+
+Basic setup in a Unity scene:
+
+```csharp
+// Attach Bow component to your bow GameObject
+public class BowSetup : MonoBehaviour
+{
+    void Start()
+    {
+        Bow bow = GetComponent<Bow>();
+        
+        // Configure strength
+        bow.minStrength = 5f;
+        bow.maxStrength = 40f;
+        bow.drawTime = 0.5f;
+        
+        // Assign references
+        bow.fpCam = Camera.main;
+        bow.projectilePrefab = arrowPrefab;
+    }
+}
+```
+
+## Important Notes
+
+<Warning>
+  The bow uses `Input.GetMouseButton(0)` and `Input.GetMouseButtonUp(0)` in the Update loop. If you're using Unity's new Input System, you'll need to modify the input handling.
+</Warning>
+
+<Info>
+  The force is applied using `ForceMode.VelocityChange`, which ignores the projectile's mass. This ensures consistent arrow speeds regardless of the Rigidbody mass setting.
+</Info>

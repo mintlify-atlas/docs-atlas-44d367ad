@@ -1,0 +1,310 @@
+---
+title: 'Troubleshooting'
+description: 'Solutions to common issues with the bow system including string rendering, arrow rotation, and force application'
+---
+
+This guide covers common problems you may encounter when setting up or using the bow system, with detailed solutions.
+
+## String Rendering Issues
+
+<Accordion title="String not visible or appearing in wrong location">
+  **Problem:** The bowstring LineRenderer is either invisible or appears disconnected from the bow.
+
+  **Most Common Cause:** The "Use World Space" option is enabled on the LineRenderer component.
+
+  **Solution:**
+
+  1. Select your Bow GameObject
+  2. Find the LineRenderer component in the Inspector
+  3. **Uncheck "Use World Space"**
+  4. The string should now render correctly in local space relative to the bow
+
+  <Warning>
+    The LineRenderer must use local space because the script sets positions using `localPosition` (`Bow.cs:69`, `70`, `73`). If "Use World Space" is enabled, these local coordinates will be interpreted as world coordinates, causing misalignment.
+  </Warning>
+
+  **Additional checks:**
+  - Verify the LineRenderer component is attached to the same GameObject as the Bow script
+  - Ensure the `lineRenderer` field in the Bow script is assigned in the Inspector
+  - Check that the LineRenderer has a material assigned with visible color/texture
+</Accordion>
+
+<Accordion title="String appears but doesn't pull back when drawing">
+  **Problem:** The bowstring is visible but remains static when holding the mouse button.
+
+  **Possible Causes:**
+
+  1. **Transform points not assigned**
+     - Check that `upperLine`, `middleLine`, and `lowerLine` are all assigned in the Inspector
+     - These references are used in `Bow.cs:69-73`
+
+  2. **DrawBackStrength is too small**
+     - Default value is `0.05f` (`Bow.cs:12`)
+     - Try increasing to `0.1f` or `0.15f` to make the pullback more visible
+     - See the [customization guide](/guides/customization#string-draw-back-distance) for recommended values
+
+  3. **Middle point positioned incorrectly**
+     - The middle transform should be positioned between the upper and lower points
+     - Movement occurs along the negative X-axis in local space
+</Accordion>
+
+<Accordion title="String has wrong shape or appears as straight line">
+  **Problem:** The string doesn't curve properly or looks like a straight line.
+
+  **Solution:**
+
+  The LineRenderer uses 3 positions (`Bow.cs:68`) to create the curve:
+  - Position 0: Upper attachment point
+  - Position 1: Middle point (moves when drawing)
+  - Position 2: Lower attachment point
+
+  **Verify positioning:**
+  1. The three transform points should form a triangle when the bow is drawn
+  2. Middle point should be positioned forward (toward the player) relative to upper/lower points
+  3. All three points should be children of the Bow GameObject for proper local positioning
+
+  **Check LineRenderer settings:**
+  - Width curve should be consistent (try a constant width of ~0.02)
+  - Ensure the material is properly assigned and visible
+</Accordion>
+
+## Arrow Rotation Issues
+
+<Accordion title="Arrow not rotating to face movement direction">
+  **Problem:** Arrow flies through the air but doesn't point in the direction it's traveling.
+
+  **Solutions:**
+
+  1. **Verify Arrow script is attached**
+     - Check that `Arrow.cs` is attached to your arrow prefab
+     - The script must have a Rigidbody component on the same GameObject (`Arrow.cs:14`)
+
+  2. **Check velocity threshold**
+     - The arrow only rotates when velocity magnitude exceeds `0.05f` (`Arrow.cs:20`)
+     - If your arrow is moving very slowly, it won't rotate
+     - Increase bow strength (`maxStrength` in `Bow.cs:10`) to ensure faster arrow velocity
+
+  3. **Rigidbody constraints**
+     - Ensure no rotation constraints are set on the arrow's Rigidbody
+     - Go to Rigidbody > Constraints > Freeze Rotation and ensure X, Y, Z are all unchecked
+
+  4. **Arrow model orientation**
+     - The arrow prefab's forward direction should point along the positive Z-axis
+     - If the model points a different direction, adjust `arrowRotation` in the Bow component
+     - See [customization guide](/guides/customization#arrow-rotation-offset) for rotation fixes
+</Accordion>
+
+<Accordion title="Arrow spinning or rotating incorrectly">
+  **Problem:** Arrow tumbles, spins, or rotates in unexpected ways.
+
+  **Solutions:**
+
+  1. **Adjust Angular Drag**
+     - Select the arrow prefab
+     - Increase Rigidbody > Angular Drag to `0.1` or higher
+     - This dampens rotational movement
+
+  2. **Fix default rotation offset**
+     - The `arrowRotation` vector (`Bow.cs:17`) might be incorrect for your arrow model
+     - Try different values in the Inspector:
+       ```csharp
+       // Common fixes
+       (0, 180, 0)    // Rotates 180° on Y-axis
+       (0, 0, 90)     // Rotates 90° on Z-axis  
+       (0, 90, 0)     // Rotates 90° on Y-axis
+       ```
+
+  3. **Verify SetDefaultRot is being called**
+     - This method is called in `Bow.cs:54`
+     - Ensure the arrow prefab has the Arrow component (not just a Rigidbody)
+     - The rotation logic is in `Arrow.cs:23`
+</Accordion>
+
+## Force and Physics Issues
+
+<Accordion title="Arrow not firing or falling straight down">
+  **Problem:** Arrow spawns but doesn't move forward, or immediately drops.
+
+  **Check these settings:**
+
+  1. **Camera reference is assigned**
+     - The `fpCam` field must reference your first-person camera (`Bow.cs:18`)
+     - Force direction is calculated using `fpCam.transform.forward` (`Bow.cs:51`)
+     - If null, the force calculation will fail
+
+  2. **Projectile has Rigidbody**
+     - The arrow prefab MUST have a Rigidbody component
+     - Force is applied via `GetComponent<Rigidbody>().AddForce()` (`Bow.cs:57`)
+     - Verify "Use Gravity" is enabled for realistic arc trajectory
+
+  3. **Strength values are sufficient**
+     - Check `minStrength` and `maxStrength` in the Bow component
+     - Values too low (< 1) may not provide enough force
+     - Default values are `minStrength = 2f` and `maxStrength = 30f`
+
+  4. **Projectile Point position**
+     - Ensure `projectilePoint` is assigned and positioned in front of the bow
+     - Arrows spawn at this position (`Bow.cs:48`)
+</Accordion>
+
+<Accordion title="Arrow force is inconsistent or too weak">
+  **Problem:** Sometimes arrows fly far, other times they barely move.
+
+  **Understanding the force calculation:**
+
+  The force is calculated in `Bow.cs:51`:
+  ```csharp
+  Vector3 force = ((fpCam.transform.forward * 100) - projectilePoint.transform.position).normalized 
+      * Mathf.Lerp(minStrength, maxStrength, percentage);
+  ```
+
+  The force depends on:
+  - **Draw percentage**: How long you hold the mouse button (0 to `drawTime`)
+  - **Min/Max strength**: Lerps between these values based on draw percentage
+  - **Camera direction**: Always fires toward camera's forward vector
+
+  **Solutions:**
+
+  1. **Increase max strength**
+     - Try values between `30f` and `60f` for more power
+
+  2. **Reduce arrow mass**
+     - Select arrow prefab > Rigidbody > Mass
+     - Lower values (0.1 to 0.3) make arrows fly further
+     - Note: ForceMode.VelocityChange (`Bow.cs:57`) makes force independent of mass, but mass still affects gravity
+
+  3. **Check draw time**
+     - If `drawTime` is very long (> 1 second), players may not hold long enough to reach full power
+     - Reduce `drawTime` to `0.3f` or `0.4f` for more consistent full-power shots
+</Accordion>
+
+<Accordion title="Arrow passes through objects or collisions don't work">
+  **Problem:** Arrow flies through walls, targets, or other colliders.
+
+  **Solutions:**
+
+  1. **Add Collider to arrow prefab**
+     - Arrow needs a Collider component (Capsule or Box Collider recommended)
+     - Ensure the collider is not set to "Is Trigger"
+
+  2. **Adjust Rigidbody Collision Detection**
+     - Select arrow prefab > Rigidbody > Collision Detection
+     - Change from "Discrete" to "Continuous" or "Continuous Dynamic"
+     - This prevents fast-moving objects from passing through colliders
+
+  3. **Reduce arrow velocity**
+     - If arrow is moving too fast, even continuous collision detection may miss
+     - Reduce `maxStrength` in the Bow component
+     - Alternatively, increase arrow Rigidbody mass and drag
+
+  4. **Layer collision matrix**
+     - Verify in Project Settings > Physics that the arrow's layer can collide with target layers
+</Accordion>
+
+## Performance Issues
+
+<Accordion title="Frame rate drops when firing many arrows">
+  **Problem:** Game slows down when multiple arrows are active.
+
+  **Optimization strategies:**
+
+  1. **Implement object pooling**
+     - Instead of `Instantiate()` in `Bow.cs:48`, reuse arrow GameObjects
+     - This reduces garbage collection and instantiation overhead
+
+  2. **Limit active arrows**
+     - Add a timer or distance check to destroy old arrows
+     - Example: Destroy arrows after 5 seconds or when they've traveled 100 units
+
+  3. **Simplify arrow colliders**
+     - Use primitive colliders (Capsule/Box) instead of Mesh Colliders
+     - Mesh Colliders are much more expensive for physics calculations
+
+  4. **Reduce arrow mesh complexity**
+     - Use low-poly arrow models
+     - Consider LOD (Level of Detail) for distant arrows
+
+  5. **Optimize LineRenderer**
+     - The string renders every frame in `Update()` (`Bow.cs:27-33`)
+     - For many bows, consider only updating when drawing (already optimized in current implementation)
+</Accordion>
+
+<Accordion title="Input lag or delayed response when drawing bow">
+  **Problem:** There's a noticeable delay between clicking and the bow responding.
+
+  **Checks:**
+
+  1. **Frame rate**
+     - Input is checked in `Update()` (`Bow.cs:27-34`)
+     - Low frame rate will cause input lag
+     - Optimize other aspects of your game
+
+  2. **Input.GetMouseButton(0) conflicts**
+     - Ensure no other scripts are consuming mouse input
+     - Check for event systems that might block input
+
+  3. **DrawTime feels slow**
+     - Reduce `drawTime` value for faster response
+     - Default is `0.35f`, try `0.2f` for snappier feel
+</Accordion>
+
+## Common Setup Mistakes
+
+<Accordion title="'Object reference not set to an instance' errors">
+  **Problem:** NullReferenceException errors in the console.
+
+  **This means a required reference is missing. Check all Inspector assignments:**
+
+  | Field | Location in Code | Required |
+  |-------|-----------------|----------|
+  | projectilePrefab | Bow.cs:15 | Yes |
+  | projectilePoint | Bow.cs:16 | Yes |
+  | fpCam | Bow.cs:18 | Yes |
+  | upperLine | Bow.cs:23 | Yes |
+  | middleLine | Bow.cs:23 | Yes |
+  | lowerLine | Bow.cs:23 | Yes |
+  | lineRenderer | Bow.cs:24 | Yes |
+
+  **Verify each field is assigned in the Inspector.** Missing any of these will cause errors.
+</Accordion>
+
+<Accordion title="Nothing happens when clicking mouse button">
+  **Problem:** No response when clicking or holding left mouse button.
+
+  **Solutions:**
+
+  1. **Bow script is attached**
+     - Verify the Bow component is on an active GameObject in the scene
+
+  2. **GameObject is active**
+     - The GameObject with the Bow script must be active (checkmark enabled in Inspector)
+
+  3. **Script compilation errors**
+     - Check Console for any C# compilation errors
+     - The script won't run if there are errors
+
+  4. **Input blocked by UI**
+     - If you have UI elements, they may be blocking mouse input
+     - Verify the EventSystem isn't preventing clicks from reaching the game
+
+  5. **Time.timeScale is 0**
+     - If the game is paused (`Time.timeScale = 0`), Update() won't run
+     - Verify the game is running at normal speed
+</Accordion>
+
+## Getting Help
+
+If you're still experiencing issues:
+
+1. **Check the Console** for error messages - they often point directly to the problem
+2. **Verify all Inspector assignments** - most issues come from missing references
+3. **Review the setup guide** - ensure you followed all steps in the [setup guide](/guides/setup)
+4. **Test with default values** - try resetting all Bow properties to defaults before customizing
+
+<Note>
+  When reporting issues, include:
+  - Unity version
+  - Exact error messages from Console
+  - Screenshots of your Inspector settings
+  - Description of what you expect vs. what actually happens
+</Note>

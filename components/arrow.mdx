@@ -1,0 +1,169 @@
+---
+title: 'Arrow Component'
+description: 'Physics-based arrow rotation component that aligns the arrow with its velocity direction'
+---
+
+## Overview
+
+The `Arrow` component handles the arrow's rotation behavior after being launched. It continuously aligns the arrow to point in the direction of its velocity, creating realistic flight physics.
+
+This component uses a physics-based approach where the arrow's rotation follows its Rigidbody velocity, making it look natural as it arcs through the air.
+
+<Note>
+  According to the README, this script is solely for arrow rotation. If you want to use your own rotation system, you can remove all `Arrow` references from the `Bow` script.
+</Note>
+
+## Properties
+
+<ParamField path="rb" type="Rigidbody" private>
+  Cached reference to the arrow's Rigidbody component. Automatically retrieved in the `Start()` method.
+</ParamField>
+
+<ParamField path="defaultRot" type="Vector3" default="Vector3.zero" private>
+  The default rotation offset applied to the arrow. Set via the `SetDefaultRot()` method when the arrow is spawned. This allows for initial rotation adjustments.
+</ParamField>
+
+## How Rotation Works
+
+The arrow uses a physics-based rotation system that runs every frame:
+
+```csharp
+void Update()
+{
+    if (rb.velocity.magnitude < 0.05f)
+        return;
+
+    transform.rotation = Quaternion.Euler(defaultRot) * Quaternion.LookRotation(rb.velocity);
+}
+```
+
+### Breakdown
+
+1. **Velocity Check**: If the arrow's velocity is very low (< 0.05 units/second), rotation stops updating
+   - Prevents jittery rotation when the arrow comes to rest
+   - Once stuck in a surface or stopped, the arrow maintains its last rotation
+
+2. **Rotation Calculation**: 
+   ```csharp
+   Quaternion.Euler(defaultRot) * Quaternion.LookRotation(rb.velocity)
+   ```
+   - `Quaternion.LookRotation(rb.velocity)` creates a rotation that points forward along the velocity vector
+   - `Quaternion.Euler(defaultRot)` applies the default rotation offset
+   - Multiplying these quaternions combines both rotations
+
+3. **Result**: The arrow always points in the direction it's moving, with any initial rotation offset preserved
+
+### Why This Works
+
+This approach creates realistic arrow flight because:
+- Arrows naturally align with their direction of travel due to aerodynamics
+- As gravity affects the velocity (creating an arc), the arrow's nose dips accordingly
+- The rotation is smooth because it's based on the continuous velocity vector
+
+## Methods
+
+### SetDefaultRot
+
+```csharp
+public void SetDefaultRot(Vector3 rot)
+{
+    defaultRot = rot;
+}
+```
+
+Sets the default rotation offset for the arrow. Called by the `Bow` component when the arrow is spawned:
+
+```csharp
+// From Bow.cs:54
+projectile.GetComponent<Arrow>().SetDefaultRot(arrowRotation + force);
+```
+
+<ParamField path="rot" type="Vector3">
+  The rotation offset to apply. In the bow system, this is the sum of the configured `arrowRotation` and the force vector, allowing the arrow's orientation to be influenced by launch force.
+</ParamField>
+
+## Setup Instructions
+
+1. **Attach to Arrow Prefab**: Add the `Arrow` component to your arrow prefab
+2. **Add Rigidbody**: Ensure the arrow has a Rigidbody component
+   - Set appropriate mass (e.g., 0.1 for a light arrow)
+   - Enable gravity
+   - Set drag and angular drag as needed for realistic physics
+3. **Arrow Model**: Orient your arrow model so it points forward (positive Z-axis) by default
+
+## Code Example
+
+Manually setting up an arrow:
+
+```csharp
+// Spawn and configure an arrow manually
+GameObject arrow = Instantiate(arrowPrefab, spawnPoint.position, Quaternion.identity);
+
+// Set the default rotation offset
+Arrow arrowComponent = arrow.GetComponent<Arrow>();
+arrowComponent.SetDefaultRot(new Vector3(0, 45, 0)); // 45-degree Y-axis offset
+
+// Apply initial force
+Rigidbody rb = arrow.GetComponent<Rigidbody>();
+rb.AddForce(Vector3.forward * 20f, ForceMode.VelocityChange);
+```
+
+## Technical Details
+
+### Velocity Threshold
+
+The `0.05f` magnitude threshold prevents rotation updates when the arrow is nearly stopped:
+
+```csharp
+if (rb.velocity.magnitude < 0.05f)
+    return;
+```
+
+This is important because:
+- Very low velocities can cause erratic `LookRotation()` calculations
+- Arrows should "stick" in their final orientation when they come to rest
+- Improves performance by skipping unnecessary calculations
+
+### Quaternion Multiplication Order
+
+The rotation is applied as `defaultRot * LookRotation(velocity)`, which means:
+- The velocity-based rotation is calculated first (local rotation)
+- The default rotation offset is applied second (parent rotation)
+- This order ensures the arrow points along its velocity with the offset consistently applied
+
+## Common Use Cases
+
+<Accordion title="Adjusting Arrow Orientation">
+  If your arrow model doesn't point forward by default, use the `arrowRotation` property in the Bow component:
+  
+  ```csharp
+  // In Bow component inspector
+  arrowRotation = new Vector3(0, 0, 90); // Rotate 90 degrees if needed
+  ```
+</Accordion>
+
+<Accordion title="Disabling Rotation">
+  If you want arrows to maintain their launch rotation without following velocity:
+  
+  ```csharp
+  // Simply don't attach the Arrow component
+  // Or comment out the Update() method
+  ```
+</Accordion>
+
+<Accordion title="Custom Rotation Behavior">
+  You can extend the Arrow component for custom behavior:
+  
+  ```csharp
+  public class CustomArrow : Arrow
+  {
+      void Update()
+      {
+          base.Update(); // Keep velocity-based rotation
+          
+          // Add custom rotation effects
+          transform.Rotate(Vector3.forward * Time.deltaTime * 100); // Spin
+      }
+  }
+  ```
+</Accordion>

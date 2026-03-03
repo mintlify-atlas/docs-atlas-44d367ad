@@ -1,0 +1,254 @@
+---
+title: 'Customization Guide'
+description: 'Learn how to customize bow strength, draw mechanics, arrow behavior, and visual effects'
+---
+
+This guide covers all the ways you can customize the bow system to fit your game's needs, with practical examples using actual property names from the source code.
+
+## Bow Strength Settings
+
+Control the power and range of your bow by adjusting force properties.
+
+### Minimum Strength
+
+The `minStrength` property (`Bow.cs:9`) determines the force applied when you barely draw the bow.
+
+```csharp
+public float minStrength = 2f;
+```
+
+**Use cases:**
+- **Close-range bow**: Set to `1f` or `2f` for short distances
+- **Powerful bow**: Set to `10f` for guaranteed strong shots even at minimum draw
+- **Skill-based**: Set to `0.5f` to require players to draw fully for effective shots
+
+<Tip>
+  A higher `minStrength` makes the bow easier to use for beginners, while lower values reward skilled players who time their draws.
+</Tip>
+
+### Maximum Strength
+
+The `maxStrength` property (`Bow.cs:10`) sets the maximum force at full draw.
+
+```csharp
+public float maxStrength = 30f;
+```
+
+**Examples by bow type:**
+
+| Bow Type | Min Strength | Max Strength | Use Case |
+|----------|-------------|--------------|----------|
+| Training Bow | 2f | 15f | Beginner-friendly, short range |
+| Hunting Bow | 5f | 30f | Balanced, default settings |
+| War Bow | 10f | 50f | Powerful, long-range combat |
+| Crossbow | 25f | 25f | Instant full power (set min = max) |
+
+<Note>
+  The force calculation in `Bow.cs:51` uses `Mathf.Lerp(minStrength, maxStrength, percentage)` to interpolate between min and max based on draw time.
+</Note>
+
+## Draw Time Mechanics
+
+The `drawTime` property (`Bow.cs:11`) controls how long it takes to reach maximum strength.
+
+```csharp
+public float drawTime = 0.35f;
+```
+
+### Adjusting Draw Time
+
+**Fast draw (0.1s - 0.25s):**
+```csharp
+public float drawTime = 0.2f;
+```
+Perfect for action-oriented gameplay with rapid firing.
+
+**Medium draw (0.3s - 0.5s):**
+```csharp
+public float drawTime = 0.35f; // Default
+```
+Balanced timing requiring some skill and patience.
+
+**Slow draw (0.6s - 1.5s):**
+```csharp
+public float drawTime = 1.0f;
+```
+Ideal for realistic, methodical archery mechanics.
+
+<Warning>
+  Very short draw times (< 0.1s) can make it difficult for players to achieve partial draws, effectively turning your bow into an on/off weapon.
+</Warning>
+
+### Draw Percentage Calculation
+
+The draw percentage is calculated in `Bow.cs:38-39`:
+
+```csharp
+currentDrawTime += Time.deltaTime;
+percentage = currentDrawTime / drawTime;
+```
+
+This percentage (0 to 1) determines:
+- Force applied to arrow (via `Mathf.Lerp`)
+- Visual string pullback amount
+
+## Visual Customization
+
+### String Draw-Back Distance
+
+The `drawBackStrength` property (`Bow.cs:12`) controls how far the string visually pulls back.
+
+```csharp
+public float drawBackStrength = 0.05f;
+```
+
+This value is in Unity units (meters) and affects only the visual appearance, not the actual force.
+
+**Adjustment examples:**
+- **Subtle draw**: `0.03f` - Minimal visual feedback
+- **Default draw**: `0.05f` - Balanced visual
+- **Exaggerated draw**: `0.1f` to `0.15f` - Obvious, arcade-style pullback
+
+<Tip>
+  Match `drawBackStrength` to your bow model's size. Larger bows may need values up to `0.2f`, while compact bows work better with `0.03f`.
+</Tip>
+
+The visual pullback is applied in `Bow.cs:73`:
+
+```csharp
+lineRenderer.SetPosition(1, middleLine.localPosition + 
+    Vector3.Lerp(Vector3.zero, new Vector3(-drawBackStrength, 0, 0), percentage));
+```
+
+The string pulls back along the negative X-axis in local space. If you need a different direction, modify the vector:
+
+```csharp
+// Pull back along Z-axis instead
+new Vector3(0, 0, -drawBackStrength)
+
+// Pull back diagonally
+new Vector3(-drawBackStrength, 0, -drawBackStrength * 0.5f)
+```
+
+## Arrow Customization
+
+### Arrow Rotation Offset
+
+The `arrowRotation` property (`Bow.cs:17`) sets the default rotation offset for spawned arrows.
+
+```csharp
+public Vector3 arrowRotation;
+```
+
+**Common rotation fixes:**
+
+```csharp
+// Arrow pointing wrong direction - rotate 180° on Y-axis
+arrowRotation = new Vector3(0, 180, 0);
+
+// Arrow sideways - rotate 90° on Z-axis  
+arrowRotation = new Vector3(0, 0, 90);
+
+// Arrow upside down - rotate 180° on Z-axis
+arrowRotation = new Vector3(0, 0, 180);
+```
+
+This rotation is applied when the arrow spawns (`Bow.cs:48`):
+
+```csharp
+GameObject projectile = Instantiate(projectilePrefab, 
+    projectilePoint.position, 
+    Quaternion.Euler(arrowRotation));
+```
+
+### Creating Custom Arrow Prefabs
+
+To create arrows with different properties:
+
+1. **Duplicate your arrow prefab**
+2. **Modify the Rigidbody component:**
+   - **Light arrow**: Mass `0.1`, Drag `0.1` (flies far, affected by gravity)
+   - **Heavy arrow**: Mass `0.5`, Drag `0.3` (drops faster, penetrates more)
+   - **Fire arrow**: Mass `0.15`, add particle effects
+3. **Keep the Arrow script attached** for proper rotation
+4. **Assign the new prefab** to `projectilePrefab` in the Bow component
+
+<Note>
+  The `Arrow.cs` script handles rotation during flight. The `SetDefaultRot` method (`Arrow.cs:26-29`) is called from `Bow.cs:54` to ensure the arrow points in the direction of travel.
+</Note>
+
+### Arrow Rotation Behavior
+
+The arrow rotates to face its velocity direction (`Arrow.cs:23`):
+
+```csharp
+transform.rotation = Quaternion.Euler(defaultRot) * Quaternion.LookRotation(rb.velocity);
+```
+
+The rotation only updates while moving (`Arrow.cs:20-21`):
+
+```csharp
+if (rb.velocity.magnitude < 0.05f)
+    return;
+```
+
+This prevents jittering when the arrow is stationary.
+
+## Advanced Customization
+
+### Multiple Bow Types in One Game
+
+Create different bow prefabs with preset values:
+
+**Short Bow:**
+```csharp
+minStrength = 3f;
+maxStrength = 20f;
+drawTime = 0.25f;
+drawBackStrength = 0.04f;
+```
+
+**Long Bow:**
+```csharp
+minStrength = 5f;
+maxStrength = 45f;
+drawTime = 0.6f;
+drawBackStrength = 0.08f;
+```
+
+**Crossbow:**
+```csharp
+minStrength = 35f;
+maxStrength = 35f;  // Same as min for instant full power
+drawTime = 0.1f;
+drawBackStrength = 0.02f;
+```
+
+### Camera-Based Aiming
+
+The force direction is calculated using the camera's forward vector (`Bow.cs:51`):
+
+```csharp
+Vector3 force = ((fpCam.transform.forward * 100) - projectilePoint.transform.position).normalized 
+    * Mathf.Lerp(minStrength, maxStrength, percentage);
+```
+
+This ensures arrows always fire where you're looking, regardless of bow orientation.
+
+<Tip>
+  If you want to add a crosshair, place a UI element at the center of the screen since arrows fire toward `fpCam.transform.forward`.
+</Tip>
+
+## Performance Optimization
+
+For games with many bows active simultaneously:
+
+1. **Object pooling**: Reuse arrow GameObjects instead of instantiating new ones
+2. **Lower LineRenderer quality**: Reduce vertex count if performance is an issue  
+3. **Limit active arrows**: Destroy arrows after a certain distance or time
+4. **Simplified collision**: Use primitive colliders (capsule/box) instead of mesh colliders
+
+## Next Steps
+
+- Check the [troubleshooting guide](/guides/troubleshooting) if you encounter issues
+- Return to the [setup guide](/guides/setup) for installation instructions
